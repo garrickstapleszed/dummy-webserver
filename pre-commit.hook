@@ -1,0 +1,28 @@
+#!/bin/bash
+
+echo
+echo "Starting pre commit..."
+
+name="tester_$RANDOM"
+
+docker build -t tester:latest .
+docker run --name $name --publish 5000:5000 --detach --rm tester:latest
+sleep 5
+
+echo
+echo "Running test..."
+http_code="$(curl -sL -w "%{http_code}" "http://0.0.0.0:5000/hook1" -o /dev/stderr --connect-timeout 3 --max-time 5)"
+
+echo
+if [ "$http_code" = 200 ];then
+   echo "Success!"
+else
+   echo "Failed."
+fi
+
+echo
+echo "Cleaning up..."
+docker stop $name
+
+# abort the commit if needed
+test "$http_code" = 200
